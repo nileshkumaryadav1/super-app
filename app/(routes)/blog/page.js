@@ -59,6 +59,11 @@ export default function BlogPage() {
             key={blog._id}
             className="border border-[var(--border)] rounded-2xl p-4 shadow hover:shadow-md transition bg-[var(--card)]"
           >
+            <img
+              src={blog.imageUrl}
+              alt={blog.title}
+              className="w-full h-48 object-cover rounded-lg mb-4"
+            />
             <h3 className="text-xl font-semibold mb-2">{blog.title}</h3>
             <p className="text-gray-400 mb-2 line-clamp-3">{blog.content}</p>
             <p className="text-sm text-[var(--secondary)]">By {blog.author}</p>
