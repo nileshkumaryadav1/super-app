@@ -1,43 +1,3 @@
-// "use client";
-
-// import Link from "next/link";
-// import { useEffect, useState } from "react";
-
-// export default function ChatPage() {
-//   const [user, setUser] = useState(null);
-
-//   // Load user from localStorage
-//   useEffect(() => {
-//     const stored = localStorage.getItem("user");
-//     if (stored) setUser(JSON.parse(stored));
-//   }, []);
-
-//   if (!user) {
-//     return (
-//       <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-//         <h2 className="text-3xl font-bold mb-2">
-//           👋 Hey! Login first to chat.
-//         </h2>
-//         <Link href="/login" className="border rounded-md px-4 py-2">Login</Link>
-//       </section>
-//     );
-//   }
-
-//   return (
-//     <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-//       <h2 className="text-3xl font-bold mb-2">
-//         👋 Hey! {user.name || user.email}
-//       </h2>
-
-//       {/* chat section */}
-
-//     </section>
-//   );
-// }
-
-
-
-// app/chat/page.js
 "use client";
 
 import { useEffect, useState } from "react";
@@ -55,9 +15,12 @@ export default function ChatList() {
   }, [router]);
 
   useEffect(() => {
+    if (!currentUser) return;
     fetch("/api/users")
       .then((res) => res.json())
-      .then((data) => setUsers(data.users.filter(u => u._id !== currentUser?._id)));
+      .then((data) =>
+        setUsers(data.users.filter((u) => u._id !== currentUser?._id))
+      );
   }, [currentUser]);
 
   const startChat = async (userId) => {
@@ -70,15 +33,42 @@ export default function ChatList() {
     router.push(`/chat/${chat._id}`);
   };
 
+  if (!currentUser) {
+    return null; // loading handled by redirect
+  }
+
   return (
-    <div className="max-w-md mx-auto mt-10 space-y-4">
-      <h2 className="text-xl font-bold">Select a user to chat</h2>
-      {users.map(u => (
-        <div key={u._id} className="p-4 border rounded cursor-pointer hover:bg-gray-100"
-             onClick={() => startChat(u._id)}>
-          {u.name} ({u.email})
-        </div>
-      ))}
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Top Header (Instagram style) */}
+      <header className="sticky top-0 bg-white border-b border-gray-200 flex items-center justify-between px-4 py-3">
+        <h1 className="text-lg font-bold">{currentUser.name || "Chats"}</h1>
+        <button className="text-blue-500 font-medium">New</button>
+      </header>
+
+      {/* Chat List */}
+      <div className="flex-1 overflow-y-auto">
+        {users.map((u) => (
+          <div
+            key={u._id}
+            onClick={() => startChat(u._id)}
+            className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
+          >
+            {/* Avatar */}
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold mr-3">
+              {u.name?.charAt(0).toUpperCase() || "U"}
+            </div>
+
+            {/* User Info */}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{u.name}</p>
+              <p className="text-gray-500 text-xs truncate">{u.email}</p>
+            </div>
+
+            {/* Timestamp placeholder (you can replace with lastMessage time) */}
+            <span className="text-xs text-gray-400">Now</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

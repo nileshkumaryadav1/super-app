@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 
 export default function AIPage() {
@@ -8,21 +8,46 @@ export default function AIPage() {
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState({ blogs: [], news: [] });
+  const [user, setUser] = useState(null);
 
-  const handleSearch = async () => {
-    if (!query) return;
+  // Load user from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) setUser(JSON.parse(stored));
+  }, []);
+
+  const suggestedQueries = [
+    "Hi",
+    "Hello",
+    "Weather today",
+    "How are you?",
+    "Tell me a joke",
+    "Latest technology news",
+    "Benefits of AI",
+  ];
+
+  const handleSearch = async (q) => {
+    const finalQuery = q || query;
+    if (!finalQuery) return;
     setLoading(true);
     setResponse("");
     setRelated({ blogs: [], news: [] });
 
     try {
-      // AI Response
-      const res = await fetch(`/api/ai?query=${encodeURIComponent(query)}`);
+      // Send query + user email to API
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: finalQuery, email: user?.email || null }),
+      });
+
       const data = await res.json();
       setResponse(data.answer);
 
-      // Related Blogs + News
-      const relatedRes = await fetch(`/api/related?query=${encodeURIComponent(query)}`);
+      // Fetch related blogs + news
+      const relatedRes = await fetch(
+        `/api/related?query=${encodeURIComponent(finalQuery)}`
+      );
       const relatedData = await relatedRes.json();
       setRelated(relatedData);
     } catch (err) {
@@ -33,13 +58,29 @@ export default function AIPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-6 px-4">
+    <div className="max-w-3xl mx-auto mt-6 px-4 mb-20">
       {/* Card */}
       <div className="p-6 bg-white rounded-2xl shadow-lg border border-gray-100">
         {/* Heading */}
         <h2 className="text-2xl md:text-3xl font-extrabold mb-6 text-center text-blue-700">
           🚀 AI Search
         </h2>
+
+        {/* Suggested Queries */}
+        <div className="flex flex-wrap gap-2 mb-4 justify-center">
+          {suggestedQueries.map((q, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setQuery(q);
+                handleSearch(q);
+              }}
+              className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
 
         {/* Input + Button (stack on mobile) */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -51,7 +92,7 @@ export default function AIPage() {
             className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             disabled={loading}
             className={`px-6 py-3 rounded-xl text-white font-medium transition ${
               loading
@@ -66,7 +107,9 @@ export default function AIPage() {
         {/* Response */}
         <div className="mt-6 p-4 sm:p-6 bg-gray-50 rounded-xl min-h-[120px] border border-gray-200 shadow-inner prose prose-blue max-w-none text-sm sm:text-base">
           {loading ? (
-            <p className="animate-pulse text-gray-500">⏳ Generating response...</p>
+            <p className="animate-pulse text-gray-500">
+              ⏳ Generating response...
+            </p>
           ) : response ? (
             <ReactMarkdown>{response}</ReactMarkdown>
           ) : (
@@ -81,15 +124,21 @@ export default function AIPage() {
           {/* Blogs */}
           {related.blogs.length > 0 && (
             <div>
-              <h3 className="text-xl font-semibold text-blue-600 mb-4">📖 Related Blogs</h3>
+              <h3 className="text-xl font-semibold text-blue-600 mb-4">
+                📖 Related Blogs
+              </h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 {related.blogs.map((blog, idx) => (
                   <div
                     key={idx}
                     className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border border-gray-100"
                   >
-                    <h4 className="font-bold text-gray-800 line-clamp-2">{blog.title}</h4>
-                    <p className="text-sm text-gray-500 line-clamp-3">{blog.excerpt}</p>
+                    <h4 className="font-bold text-gray-800 line-clamp-2">
+                      {blog.title}
+                    </h4>
+                    <p className="text-sm text-gray-500 line-clamp-3">
+                      {blog.excerpt}
+                    </p>
                     <a
                       href={`/blogs/${blog.slug}`}
                       className="text-blue-600 text-sm mt-2 inline-block hover:underline"
@@ -105,15 +154,21 @@ export default function AIPage() {
           {/* News */}
           {related.news.length > 0 && (
             <div>
-              <h3 className="text-xl font-semibold text-blue-600 mb-4">📰 Related News</h3>
+              <h3 className="text-xl font-semibold text-blue-600 mb-4">
+                📰 Related News
+              </h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 {related.news.map((article, idx) => (
                   <div
                     key={idx}
                     className="p-4 bg-white rounded-lg shadow hover:shadow-md transition border border-gray-100"
                   >
-                    <h4 className="font-bold text-gray-800 line-clamp-2">{article.title}</h4>
-                    <p className="text-sm text-gray-500 line-clamp-3">{article.description}</p>
+                    <h4 className="font-bold text-gray-800 line-clamp-2">
+                      {article.title}
+                    </h4>
+                    <p className="text-sm text-gray-500 line-clamp-3">
+                      {article.description}
+                    </p>
                     <a
                       href={article.url}
                       target="_blank"

@@ -3,12 +3,14 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { ArrowLeft, Send } from "lucide-react";
 
 export default function ChatRoom() {
   const { chatId } = useParams();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
+  const [chatUser, setChatUser] = useState(null); // for header display
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -18,9 +20,18 @@ export default function ChatRoom() {
 
   useEffect(() => {
     if (!chatId) return;
-    fetch(`/api/message?chatId=${chatId}`)
-      .then((res) => res.json())
-      .then((data) => setMessages(data.messages));
+
+    const fetchMessages = async () => {
+      const res = await fetch(`/api/message?chatId=${chatId}`);
+      const data = await res.json();
+      setMessages(data.messages);
+      if (data.chatUser) setChatUser(data.chatUser);
+    };
+
+    fetchMessages();
+
+    const interval = setInterval(fetchMessages, 3000); // every 3s
+    return () => clearInterval(interval);
   }, [chatId]);
 
   useEffect(() => {
@@ -48,9 +59,20 @@ export default function ChatRoom() {
   };
 
   return (
-    <div className="max-w-md h-screen flex flex-col border border-gray-200">
+    <div className="max-w-md h-screen flex flex-col border border-gray-200 bg-white">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <ArrowLeft className="w-5 h-5 cursor-pointer text-gray-600" />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-300" />
+          <span className="font-semibold text-sm">
+            {chatUser?.name || "Chat"}
+          </span>
+        </div>
+      </div>
+
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-white">
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
         {messages.map((m) => {
           const isCurrentUser =
             m.senderId === currentUser?._id ||
@@ -64,10 +86,10 @@ export default function ChatRoom() {
               }`}
             >
               <div
-                className={`px-4 py-2 rounded-2xl text-sm max-w-xs break-words ${
+                className={`px-4 py-2 text-sm max-w-[75%] break-words shadow-sm ${
                   isCurrentUser
-                    ? "bg-blue-500 text-white rounded-br-none"
-                    : "bg-gray-200 text-black rounded-bl-none"
+                    ? "bg-blue-500 text-white rounded-2xl rounded-br-sm"
+                    : "bg-gray-200 text-black rounded-2xl rounded-bl-sm"
                 }`}
               >
                 {m.text}
@@ -84,20 +106,20 @@ export default function ChatRoom() {
       {/* Input bar */}
       <form
         onSubmit={sendMessage}
-        className="flex items-center gap-2 p-3 border-t border-gray-200 bg-white"
+        className="flex items-center gap-2 p-3 border-t border-gray-200 bg-white mb-15"
       >
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="flex-1 p-2 rounded-full border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="flex-1 p-2 text-sm rounded-full border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
           placeholder="Message..."
         />
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded-full"
+          className="p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition"
         >
-          Send
+          <Send className="w-4 h-4" />
         </button>
       </form>
     </div>
