@@ -4,13 +4,14 @@ import { NextResponse } from "next/server";
 
 export async function GET(req) {
   const parser = new RSSParser();
-  const feedUrl = "http://feeds.bbci.co.uk/news/rss.xml"; // change feed if needed
+  // const feedUrl = "http://feeds.bbci.co.uk/news/rss.xml"; // change feed if needed
+  const feedUrl = "https://www.indiatoday.in/rss/home";
   const defaultImage = "/news.jpg"; // fallback image
 
   // Get pagination params from query string
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page")) || 1;
-  const limit = parseInt(searchParams.get("limit")) || 5;
+  const limit = parseInt(searchParams.get("limit")) || 10;
 
   try {
     const feed = await parser.parseURL(feedUrl);

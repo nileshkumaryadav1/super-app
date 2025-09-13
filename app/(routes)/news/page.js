@@ -13,7 +13,7 @@ export default function NewsShorts() {
 
   const fetchNews = async (p = 1) => {
     try {
-      const res = await fetch(`/api/news?page=${p}&limit=5`);
+      const res = await fetch(`/api/news?page=${p}&limit=10`);
       const data = await res.json();
       setArticles((prev) => [...prev, ...(data.articles || [])]);
       setHasMore(data.hasMore);
@@ -24,7 +24,6 @@ export default function NewsShorts() {
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     fetchNews();
   }, []);
@@ -36,7 +35,6 @@ export default function NewsShorts() {
 
     const handleScroll = () => {
       if (!hasMore || loading) return;
-
       const { scrollTop, scrollHeight, clientHeight } = container;
       if (scrollTop + clientHeight >= scrollHeight - 50) {
         setLoading(true);
@@ -45,13 +43,9 @@ export default function NewsShorts() {
     };
 
     container.addEventListener("scroll", handleScroll);
-
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-    };
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [hasMore, loading]);
 
-  // Fetch new page when page state changes
   useEffect(() => {
     if (page === 1) return;
     fetchNews(page);
@@ -59,38 +53,45 @@ export default function NewsShorts() {
 
   if (!articles.length && loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-[75vh]">
         <p className="animate-pulse text-gray-500 text-lg">Loading news...</p>
       </div>
     );
   }
 
+  const truncateText = (text, max) =>
+    text.length > max ? text.slice(0, max).trim() + "..." : text;
+
   return (
-    <>
-      {/* Overlay for expanded article */}
+    <section className="relative">
+      {/* Expanded Article Overlay */}
       {activeArticle && (
-        <div className="fixed inset-0 z-50 bg-black/90 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/95 overflow-y-auto py-10 px-4 sm:px-6">
           <button
             onClick={() => setActiveArticle(null)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600"
+            className="absolute top-4 right-4 p-3 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition"
           >
             ✖
           </button>
-          <div className="max-w-2xl mx-auto mt-20 px-4 text-white">
-            <h1 className="text-2xl font-bold mb-3">{activeArticle.title}</h1>
+          <div className="max-w-3xl mx-auto text-white">
+            <h1 className="text-2xl sm:text-4xl font-bold mb-4">
+              {activeArticle.title}
+            </h1>
             {activeArticle.urlToImage && (
               <img
                 src={activeArticle.urlToImage}
                 alt={activeArticle.title}
-                className="w-full h-64 object-cover rounded-lg mb-4"
+                className="w-full sm:h-96 object-cover rounded-lg mb-6 shadow-lg"
               />
             )}
-            <p className="text-gray-200 mb-4">{activeArticle.description}</p>
+            <p className="text-gray-200 mb-6 text-lg">
+              {activeArticle.description}
+            </p>
             <a
               href={activeArticle.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-medium"
+              className="block w-full text-center bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-lg font-semibold transition"
             >
               Read Original
             </a>
@@ -98,31 +99,36 @@ export default function NewsShorts() {
         </div>
       )}
 
-      {/* Vertical scroll “shorts” */}
+      {/* Vertical Scroll “Shorts” */}
       <div
         ref={containerRef}
-        className="h-screen w-full overflow-y-scroll snap-y snap-mandatory"
+        className="h-[75vh] w-full overflow-y-auto snap-y snap-mandatory scroll-smooth"
       >
         {articles.map((article, idx) => (
           <div
             key={idx}
-            className="h-screen w-full flex flex-col justify-end relative snap-start cursor-pointer"
+            className="w-full h-full flex flex-col justify-end relative snap-start cursor-pointer group"
             onClick={() => setActiveArticle(article)}
           >
             <img
               src={article.urlToImage || "/news.jpg"}
               alt={article.title}
-              className="absolute inset-0 w-full h-full object-cover brightness-75"
+              className="w-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="p-6 relative z-10 bg-gradient-to-t from-black/70 to-transparent text-white">
-              <h2 className="text-2xl font-bold mb-2 line-clamp-3">{article.title}</h2>
-              <p className="text-gray-200 mb-4 line-clamp-5">{article.description}</p>
-              <span className="inline-block bg-blue-600 px-4 py-2 rounded-md text-sm font-medium">
+            <div className="p-6 relative z-10 bg-white/80 backdrop-blur-md rounded-b-xl -mt-6 sm:-mt-10 shadow-lg">
+              <h2 className="text-lg sm:text-xl font-bold mb-2 text-gray-900">
+                {truncateText(article.title, 95)}
+              </h2>
+              <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                {truncateText(article.description, 120)}
+              </p>
+              <span className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium transition">
                 Read Full
               </span>
             </div>
           </div>
         ))}
+
         {loading && (
           <div className="flex items-center justify-center py-6">
             <p className="animate-pulse text-gray-500 text-lg">Loading more...</p>
@@ -134,6 +140,6 @@ export default function NewsShorts() {
           </div>
         )}
       </div>
-    </>
+    </section>
   );
 }
